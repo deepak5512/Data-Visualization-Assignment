@@ -2,7 +2,7 @@
 
 ## Prerequisites
 - **R** (version 4.0 or higher)
-- **RStudio** (recommended for better user experience)
+- **RStudio**
 
 ## Step 1: Install Required R Packages
 Before running any code, install all required packages by running this command in R:
