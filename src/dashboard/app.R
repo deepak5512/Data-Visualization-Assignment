@@ -71,7 +71,7 @@ ui <- dashboardPage(
   dashboardBody(
     tags$head(tags$style(HTML(
       ".shiny-plot-output{overflow:hidden; padding:10px; box-sizing:border-box;} .tab-content{overflow:hidden;}\n" ,
-      ".skin-blue .main-sidebar .sidebar{padding:10px 10px 20px; overflow-y: auto; max-height: 100vh; scrollbar-width: none; -ms-overflow-style: none;}\n",
+      ".skin-blue .main-sidebar .sidebar{padding:10px 10px 20px; overflow-y: visible; max-height: none; scrollbar-width: none; -ms-overflow-style: none;}\n",
       ".skin-blue .main-sidebar .sidebar::-webkit-scrollbar{display: none;}\n",
       ".main-sidebar .form-group{margin-bottom:8px;}\n",
       ".main-sidebar .selectize-input{min-height:30px;}\n",
@@ -83,15 +83,17 @@ ui <- dashboardPage(
       ".main-sidebar .form-group label{font-size:12px; margin-bottom:4px;}\n",
       ".main-sidebar select, .main-sidebar .selectize-input{font-size:11px;}\n",
       ".main-sidebar .btn{font-size:11px; padding:6px 12px;}\n",
-      "/* Hide scrollbars for entire dashboard */\n",
+      "/* Unified scrolling for entire dashboard */\n",
+      ".wrapper{height: 100vh; overflow-y: auto;}\n",
+      ".main-sidebar{position: fixed; height: 100vh; overflow-y: visible;}\n",
+      ".content-wrapper{margin-left: 320px; min-height: 100vh; overflow-y: visible;}\n",
+      ".main-content{padding: 20px; overflow-y: visible;}\n",
+      "/* Hide scrollbars for cleaner look */\n",
       "html, body{scrollbar-width: none; -ms-overflow-style: none;}\n",
       "html::-webkit-scrollbar, body::-webkit-scrollbar{display: none;}\n",
-      ".content-wrapper, .main-content{scrollbar-width: none; -ms-overflow-style: none;}\n",
-      ".content-wrapper::-webkit-scrollbar, .main-content::-webkit-scrollbar{display: none;}\n",
-      ".tab-content{scrollbar-width: none; -ms-overflow-style: none;}\n",
-      ".tab-content::-webkit-scrollbar{display: none;}\n",
-      ".fluid-row{scrollbar-width: none; -ms-overflow-style: none;}\n",
-      ".fluid-row::-webkit-scrollbar{display: none;}\n"
+      ".wrapper::-webkit-scrollbar{display: none;}\n",
+      ".tab-content{overflow-y: visible;}\n",
+      ".fluid-row{overflow-y: visible;}\n"
       
     ))),
     tabItems(
