@@ -1,0 +1,7 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+data/
+data/raw/csisg_dataset.xlsx
+data/raw/~$csisg_dataset.xlsx
