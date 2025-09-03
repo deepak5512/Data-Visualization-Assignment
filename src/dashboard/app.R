@@ -1366,6 +1366,67 @@ server <- function(input, output, session) {
     plot_name <- input$plot_selector
     if (is.null(plot_name)) return(NULL)
     
+    # Special handling for radar plot (base R plot)
+    if (plot_name == "radar_plot") {
+      df <- filtered_data()
+      selected_bank <- input$radar_bank_selector
+      
+      if (nrow(df) > 0 && !is.null(selected_bank)) {
+        df_selected <- df %>% filter(Issuer == selected_bank)
+        
+        if (nrow(df_selected) > 0) {
+          vars <- paste0("vn_7002_T", sprintf("%02d", 1:10))
+          radar_means <- df_selected %>%
+            summarise(across(all_of(vars), ~ mean(.x, na.rm = TRUE)), .groups = "drop")
+          
+          max_min <- data.frame(matrix(c(rep(10, length(vars)), rep(0, length(vars))),
+                                     nrow = 2, byrow = TRUE))
+          colnames(max_min) <- vars
+          radar_values <- radar_means %>% select(all_of(vars))
+          radar_df <- rbind(max_min, radar_values)
+          
+          bank_color <- "#2E86AB"
+          
+          radarchart(radar_df,
+                     axistype = 1,
+                     pcol = bank_color,
+                     plty = 0,
+                     plwd = 0.1,
+                     cglty = 1,
+                     cglcol = "gray",
+                     cglwd = 0.8,
+                     vlcex = 0.8,
+                     caxislabels = seq(0, 10, 2),
+                     calcex = 0.7,
+                     title = paste0("Brand Perception Profile - ", selected_bank),
+                     vlabels = c("T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10"))
+          
+          legend("topright", 
+                 legend = c("T01: Feel comfortable and safe when using",
+                           "T02: Card benefits are presented clearly",
+                           "T03: Brand image complements personality",
+                           "T04: Has a good reputation",
+                           "T05: Flexibility of policies",
+                           "T06: Ease of accessing card balance",
+                           "T07: Card benefits (cashbacks, rewards)",
+                           "T08: Merchant tie-ups meeting needs",
+                           "T09: Ease of reward redemption",
+                           "T10: Redemption catalogue meeting needs"),
+                 cex = 0.8,
+                 bty = "n",
+                 x.intersp = 0.5,
+                 y.intersp = 0.8)
+        } else {
+          plot.new()
+          text(0.5, 0.5, paste0("No data available for ", selected_bank), cex = 1.5)
+        }
+      } else {
+        plot.new()
+        text(0.5, 0.5, "Please select a bank", cex = 1.5)
+      }
+      return(NULL)  # Return NULL since we've already plotted
+    }
+    
     # Render the selected plot based on the input
     switch(plot_name,
            "core_metrics_plot" = {
@@ -1504,68 +1565,7 @@ server <- function(input, output, session) {
                geom_smooth(method = "lm") +
                custom_theme
            },
-           "radar_plot" = {
-             df <- filtered_data()
-             selected_bank <- input$radar_bank_selector
-             
-             validate(
-               need(nrow(df) > 0, "No data available"),
-               need(!is.null(selected_bank), "Please select a bank")
-             )
-             
-             # Filter data for selected bank only
-             df_selected <- df %>% filter(Issuer == selected_bank)
-             
-             if (nrow(df_selected) == 0) {
-               return(ggplot() + 
-                        annotate("text", x = 0.5, y = 0.5, 
-                                label = paste0("No data available for ", selected_bank), size = 5) +
-                        theme_void())
-             }
-             
-             vars <- paste0("vn_7002_T", sprintf("%02d", 1:10))
-             radar_means <- df_selected %>%
-               summarise(across(all_of(vars), ~ mean(.x, na.rm = TRUE)), .groups = "drop")
-             
-             max_min <- data.frame(matrix(c(rep(10, length(vars)), rep(0, length(vars))),
-                                        nrow = 2, byrow = TRUE))
-             colnames(max_min) <- vars
-             radar_values <- radar_means %>% select(all_of(vars))
-             radar_df <- rbind(max_min, radar_values)
-             
-             bank_color <- "#2E86AB"  # Professional blue color
-             
-             radarchart(radar_df,
-                        axistype = 1,
-                        pcol = bank_color,
-                        plty = 0,  # No lines
-                        plwd = 0.1,  # Very thin line width
-                        cglty = 1,
-                        cglcol = "gray",
-                        cglwd = 0.8,
-                        vlcex = 0.8,
-                        caxislabels = seq(0, 10, 2),
-                        calcex = 0.7,
-                        title = paste0("Brand Perception Profile - ", selected_bank),
-                        vlabels = c("T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10"))
-             
-             # Add legend with parameter meanings
-             legend("topright", 
-                    legend = c("T01: Feel comfortable and safe when using",
-                              "T02: Card benefits are presented clearly",
-                              "T03: Brand image complements personality",
-                              "T04: Has a good reputation",
-                              "T05: Flexibility of policies",
-                              "T06: Ease of accessing card balance",
-                              "T07: Card benefits (cashbacks, rewards)",
-                              "T08: Merchant tie-ups meeting needs",
-                              "T09: Ease of reward redemption",
-                              "T10: Redemption catalogue meeting needs"),
-                    cex = 0.8,
-                    bty = "n",
-                    x.intersp = 0.5,
-                    y.intersp = 0.8)
-           },
+
                        "satisfaction_table" = {
               df <- filtered_data()
               selected_column <- input$table_column_selector
@@ -2643,7 +2643,66 @@ server <- function(input, output, session) {
       
       # Save the plot
       if (!is.null(p)) {
-        ggsave(file, plot = p, width = 10, height = 8, dpi = 300, bg = "white")
+        # Check if it's a base R plot (radar chart) or ggplot
+        if (plot_name == "radar_plot") {
+          # For base R plots, use png() and dev.off()
+          png(file, width = 10, height = 8, units = "in", res = 300, bg = "white")
+          # Recreate the radar plot
+          df <- filtered_data()
+          selected_bank <- input$radar_bank_selector
+          
+          if (nrow(df) > 0 && !is.null(selected_bank)) {
+            df_selected <- df %>% filter(Issuer == selected_bank)
+            
+            if (nrow(df_selected) > 0) {
+              vars <- paste0("vn_7002_T", sprintf("%02d", 1:10))
+              radar_means <- df_selected %>%
+                summarise(across(all_of(vars), ~ mean(.x, na.rm = TRUE)), .groups = "drop")
+              
+              max_min <- data.frame(matrix(c(rep(10, length(vars)), rep(0, length(vars))),
+                                         nrow = 2, byrow = TRUE))
+              colnames(max_min) <- vars
+              radar_values <- radar_means %>% select(all_of(vars))
+              radar_df <- rbind(max_min, radar_values)
+              
+              bank_color <- "#2E86AB"
+              
+              radarchart(radar_df,
+                         axistype = 1,
+                         pcol = bank_color,
+                         plty = 0,
+                         plwd = 0.1,
+                         cglty = 1,
+                         cglcol = "gray",
+                         cglwd = 0.8,
+                         vlcex = 0.8,
+                         caxislabels = seq(0, 10, 2),
+                         calcex = 0.7,
+                         title = paste0("Brand Perception Profile - ", selected_bank),
+                         vlabels = c("T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10"))
+              
+              legend("topright", 
+                     legend = c("T01: Feel comfortable and safe when using",
+                               "T02: Card benefits are presented clearly",
+                               "T03: Brand image complements personality",
+                               "T04: Has a good reputation",
+                               "T05: Flexibility of policies",
+                               "T06: Ease of accessing card balance",
+                               "T07: Card benefits (cashbacks, rewards)",
+                               "T08: Merchant tie-ups meeting needs",
+                               "T09: Ease of reward redemption",
+                               "T10: Redemption catalogue meeting needs"),
+                     cex = 0.8,
+                     bty = "n",
+                     x.intersp = 0.5,
+                     y.intersp = 0.8)
+            }
+          }
+          dev.off()
+        } else {
+          # For ggplot objects, use ggsave()
+          ggsave(file, plot = p, width = 10, height = 8, dpi = 300, bg = "white")
+        }
       }
     }
   )
